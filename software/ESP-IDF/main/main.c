@@ -37,6 +37,7 @@ spi_bus_config_t buscfg={
 esp_err_t spi_init(){
     esp_err_t ret = ESP_OK;
     ret = spi_bus_initialize(VSPI_HOST, &buscfg, SPI_DMA_CH_AUTO);
+    
     if(ret != ESP_OK){
            printf("SPI INT ERR\n");
     }
@@ -59,6 +60,8 @@ void app_main(void){
             fclose(f);
         }
     }
+    INIT_MFRC522();
+    PCD_Init1();
 
     xTaskCreatePinnedToCore(mainTask, "mainTask", 4096*2, NULL, tskIDLE_PRIORITY, NULL,0);
 
@@ -70,7 +73,10 @@ void app_main(void){
 
 void mainTask(void *pvParameter){
     while(1){
-    
+        if(1){
+            printf("%d\n",PICC_IsNewCardPresent());
+            vTaskDelay(1000/portTICK_PERIOD_MS);
+        }
     }
     vTaskDelete(NULL);
 }

@@ -3,26 +3,123 @@
 * NOTE: Please also check the comments in MFRC522.h - they provide useful hints and background information.
 * Released into the public domain.
 */
-
-
 #include "MFRC522.h"
 
-uint8_t millis(){
-    return 0;
+
+// Firmware data for self-test
+// Reference values based on firmware version
+// Hint: if needed, you can remove unused self-test data to save flash memory
+//
+// Version 0.0 (0x90)
+// Philips Semiconductors; Preliminary Specification Revision 2.0 - 01 August 2005; 16.1 self-test
+const uint8_t MFRC522_firmware_referenceV0_0[]  = {
+	0x00, 0x87, 0x98, 0x0f, 0x49, 0xFF, 0x07, 0x19,
+	0xBF, 0x22, 0x30, 0x49, 0x59, 0x63, 0xAD, 0xCA,
+	0x7F, 0xE3, 0x4E, 0x03, 0x5C, 0x4E, 0x49, 0x50,
+	0x47, 0x9A, 0x37, 0x61, 0xE7, 0xE2, 0xC6, 0x2E,
+	0x75, 0x5A, 0xED, 0x04, 0x3D, 0x02, 0x4B, 0x78,
+	0x32, 0xFF, 0x58, 0x3B, 0x7C, 0xE9, 0x00, 0x94,
+	0xB4, 0x4A, 0x59, 0x5B, 0xFD, 0xC9, 0x29, 0xDF,
+	0x35, 0x96, 0x98, 0x9E, 0x4F, 0x30, 0x32, 0x8D
+};
+// Version 1.0 (0x91)
+// NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test
+const uint8_t MFRC522_firmware_referenceV1_0[] = {
+	0x00, 0xC6, 0x37, 0xD5, 0x32, 0xB7, 0x57, 0x5C,
+	0xC2, 0xD8, 0x7C, 0x4D, 0xD9, 0x70, 0xC7, 0x73,
+	0x10, 0xE6, 0xD2, 0xAA, 0x5E, 0xA1, 0x3E, 0x5A,
+	0x14, 0xAF, 0x30, 0x61, 0xC9, 0x70, 0xDB, 0x2E,
+	0x64, 0x22, 0x72, 0xB5, 0xBD, 0x65, 0xF4, 0xEC,
+	0x22, 0xBC, 0xD3, 0x72, 0x35, 0xCD, 0xAA, 0x41,
+	0x1F, 0xA7, 0xF3, 0x53, 0x14, 0xDE, 0x7E, 0x02,
+	0xD9, 0x0F, 0xB5, 0x5E, 0x25, 0x1D, 0x29, 0x79
+};
+// Version 2.0 (0x92)
+// NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test
+const uint8_t MFRC522_firmware_referenceV2_0[] = {
+	0x00, 0xEB, 0x66, 0xBA, 0x57, 0xBF, 0x23, 0x95,
+	0xD0, 0xE3, 0x0D, 0x3D, 0x27, 0x89, 0x5C, 0xDE,
+	0x9D, 0x3B, 0xA7, 0x00, 0x21, 0x5B, 0x89, 0x82,
+	0x51, 0x3A, 0xEB, 0x02, 0x0C, 0xA5, 0x00, 0x49,
+	0x7C, 0x84, 0x4D, 0xB3, 0xCC, 0xD2, 0x1B, 0x81,
+	0x5D, 0x48, 0x76, 0xD5, 0x71, 0x61, 0x21, 0xA9,
+	0x86, 0x96, 0x83, 0x38, 0xCF, 0x9D, 0x5B, 0x6D,
+	0xDC, 0x15, 0xBA, 0x3E, 0x7D, 0x95, 0x3B, 0x2F
+};
+// Clone
+// Fudan Semiconductor FM17522 (0x88)
+const uint8_t FM17522_firmware_reference[] = {
+	0x00, 0xD6, 0x78, 0x8C, 0xE2, 0xAA, 0x0C, 0x18,
+	0x2A, 0xB8, 0x7A, 0x7F, 0xD3, 0x6A, 0xCF, 0x0B,
+	0xB1, 0x37, 0x63, 0x4B, 0x69, 0xAE, 0x91, 0xC7,
+	0xC3, 0x97, 0xAE, 0x77, 0xF4, 0x37, 0xD7, 0x9B,
+	0x7C, 0xF5, 0x3C, 0x11, 0x8F, 0x15, 0xC3, 0xD7,
+	0xC1, 0x5B, 0x00, 0x2A, 0xD0, 0x75, 0xDE, 0x9E,
+	0x51, 0x64, 0xAB, 0x3E, 0xE9, 0x15, 0xB5, 0xAB,
+	0x56, 0x9A, 0x98, 0x82, 0x26, 0xEA, 0x2A, 0x62
+};
+
+
+
+
+
+
+
+spi_device_handle_t handle1;
+
+spi_device_interface_config_t cfg1={
+    .command_bits       = 0,
+    .address_bits       = 0,
+    .dummy_bits         = 0,
+    .clock_speed_hz     = 1000000,
+    .duty_cycle_pos     = 128,        //50% duty cycle
+    .mode               = 0,
+    .spics_io_num       = HSPI_CS,
+    .cs_ena_posttrans   = 0,        //Keep the CS low 3 cycles after transaction, to stop slave from missing the last bit when CS has less propagation delay than CLK
+    .queue_size         = 1
+};
+
+
+uint64_t millis(){
+    return (uint64_t)esp_timer_get_time() / 1000;
 }
 
-void yield(){
-    return;
-}
+
+spi_bus_config_t buscfg1={
+    .miso_io_num=HSPI_MISO,
+    .sclk_io_num=HSPI_CLK,
+    .mosi_io_num=HSPI_MOSI,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+    };
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for setting up the Arduino
 /////////////////////////////////////////////////////////////////////////////////////
-void INIT_MFRC522(	uint8_t chipSelectPin,		///< Arduino pin connected to MFRC522's SPI slave select input (Pin 24, NSS, active low)
-					uint8_t resetPowerDownPin	///< Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low). If there is no connection from the CPU to NRSTPD, set this to UINT8_MAX. In this case, only soft reset will be used in PCD_Init().
-				) {
-	_chipSelectPin = chipSelectPin;
-	_resetPowerDownPin = resetPowerDownPin;
+void INIT_MFRC522(){
+    gpio_config_t io_conf_out;
+    io_conf_out.intr_type = GPIO_INTR_DISABLE;
+    io_conf_out.mode = GPIO_MODE_OUTPUT;
+    io_conf_out.pin_bit_mask = (1ULL<<RST_PIN);
+    io_conf_out.pull_down_en =0;
+    io_conf_out.pull_up_en = 0;
+    gpio_config(&io_conf_out);
+
+    
+   
+
+    esp_err_t ret = ESP_OK;
+    ret = spi_bus_initialize(HSPI_HOST, &buscfg1, SPI_DMA_DISABLED);
+    if(ret != ESP_OK){
+        printf("SPI ERR1\n");
+        
+    }
+    ret = spi_bus_add_device(HSPI_HOST, &cfg1, &handle1);
+    if(ret != ESP_OK){
+        printf("SPI ERR1\n");
+        
+    }
+
 } // End constructor
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -36,12 +133,15 @@ void INIT_MFRC522(	uint8_t chipSelectPin,		///< Arduino pin connected to MFRC522
 void PCD_WriteRegister(	enum PCD_Register reg,	///< The register to write to. One of the PCD_Register enums.
 									uint8_t value			///< The value to write.
 								) {
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	
-	digitalWrite(_chipSelectPin, LOW);		// Select slave
-	SPI.transfer(reg);						// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
-	SPI.transfer(value);
-	digitalWrite(_chipSelectPin, HIGH);		// Release slave again
-	SPI.endTransaction(); // Stop using the SPI bus
+    uint8_t transmit_data[2] = {reg, value};
+    spi_transaction_t t= {
+        .tx_buffer = transmit_data,
+        .rx_buffer = NULL,
+        .length = 2*8
+    };
+    if(spi_device_polling_transmit(handle1, &t) != ESP_OK){
+        printf("SPI ERR2\n");
+    }
 } // End PCD_WriteRegister()
 
 /**
@@ -52,14 +152,20 @@ void PCD_WriteRegisters(	enum PCD_Register reg,	///< The register to write to. O
 									uint8_t count,			///< The number of uint8_ts to write to the register
 									uint8_t *values		///< The values to write. uint8_t array.
 								) {
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(_chipSelectPin, LOW);		// Select slave
-	SPI.transfer(reg);						// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
-	for (uint8_t index = 0; index < count; index++) {
-		SPI.transfer(values[index]);
-	}
-	digitalWrite(_chipSelectPin, HIGH);		// Release slave again
-	SPI.endTransaction(); // Stop using the SPI bus
+	uint8_t transmit_data[count+1];
+    memcpy(&transmit_data[1], values, count);
+    transmit_data[0] = (uint8_t)reg;
+    spi_transaction_t t= {
+        .tx_buffer = transmit_data,
+        .rx_buffer = NULL,
+        .length = (count+1)*8
+    };
+    if(spi_device_polling_transmit(handle1, &t) != ESP_OK){
+        printf("SPI ERR3\n");
+    }
+
+
+
 } // End PCD_WriteRegister()
 
 /**
@@ -68,14 +174,18 @@ void PCD_WriteRegisters(	enum PCD_Register reg,	///< The register to write to. O
  */
 uint8_t PCD_ReadRegister(	enum PCD_Register reg	///< The register to read from. One of the PCD_Register enums.
 								) {
-	uint8_t value = 0;
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(_chipSelectPin, LOW);			// Select slave
-	SPI.transfer(0x80 | reg);					// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
-	value = SPI.transfer(0);					// Read the value back. Send 0 to stop reading.
-	digitalWrite(_chipSelectPin, HIGH);			// Release slave again
-	SPI.endTransaction(); // Stop using the SPI bus
-	return value;
+    uint8_t transmit_data[1] = {0x80 | (uint8_t)reg};
+    uint8_t recieve_data[1];
+    spi_transaction_t t= {
+        .tx_buffer = transmit_data,
+        .rx_buffer = recieve_data,
+        .length = 2*8,
+        .rxlength = 1*8
+    };
+    if(spi_device_polling_transmit(handle1, &t) != ESP_OK){
+        printf("SPI ERR4\n");
+    }
+    return recieve_data[0];
 } // End PCD_ReadRegister()
 
 /**
@@ -91,27 +201,32 @@ void PCD_ReadRegisters(	enum PCD_Register reg,	///< The register to read from. O
 		return;
 	}
 	uint8_t address = 0x80 | reg;				// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
-	uint8_t index = 0;							// Index in values array.
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(_chipSelectPin, LOW);		// Select slave
-	count--;								// One read is performed outside of the loop
-	SPI.transfer(address);					// Tell MFRC522 which address we want to read
-	if (rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
+
+    uint8_t transmit_data[count+2];
+    uint8_t recieve_data[count+2];
+    uint8_t i;
+    for(i = 0; i < count; i++){
+        transmit_data[i] = address;
+    }
+    transmit_data[count] = 0;
+
+    spi_transaction_t t= {
+        .tx_buffer = transmit_data,
+        .rx_buffer = recieve_data,
+        .length = count*2*8,
+        .rxlength = count*8
+    };
+    if(spi_device_polling_transmit(handle1, &t) != ESP_OK){
+        printf("SPI ERR5\n");
+    }
+    if (rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
 		// Create bit mask for bit positions rxAlign..7
 		uint8_t mask = (0xFF << rxAlign) & 0xFF;
-		// Read value and tell that we want to read the same address again.
-		uint8_t value = SPI.transfer(address);
 		// Apply mask to both current value of values[0] and the new data in value.
-		values[0] = (values[0] & ~mask) | (value & mask);
-		index++;
+		recieve_data[0] = (values[0] & ~mask) | (recieve_data[0] & mask);
+
 	}
-	while (index < count) {
-		values[index] = SPI.transfer(address);	// Read value and tell that we want to read the same address again.
-		index++;
-	}
-	values[index] = SPI.transfer(0);			// Read the final uint8_t. Send 0 to stop reading.
-	digitalWrite(_chipSelectPin, HIGH);			// Release slave again
-	SPI.endTransaction(); // Stop using the SPI bus
+    memcpy(values, recieve_data, count);
 } // End PCD_ReadRegister()
 
 /**
@@ -156,7 +271,7 @@ enum StatusCode PCD_CalculateCRC(	uint8_t *data,		///< In: Pointer to the data t
 	// indicate that the CRC calculation is complete in a loop. If the
 	// calculation is not indicated as complete in ~90ms, then time out
 	// the operation.
-	const uint32_t deadline = millis() + 89;
+	const uint64_t deadline = millis() + 89;
 
 	do {
 		// DivIrqReg[7..0] bits are: Set2 reserved reserved MfinActIRq reserved CRCIRq reserved reserved
@@ -168,7 +283,7 @@ enum StatusCode PCD_CalculateCRC(	uint8_t *data,		///< In: Pointer to the data t
 			result[1] = PCD_ReadRegister(CRCResultRegH);
 			return STATUS_OK;
 		}
-		yield();
+		taskYIELD();
 	}
 	while ( millis() < deadline);
 
@@ -188,24 +303,32 @@ void PCD_Init1() {
 	uint8_t hardReset = 0;
 
 	// Set the chipSelectPin as digital output, do not select the slave yet
-	pinMode(_chipSelectPin, OUTPUT);
-	digitalWrite(_chipSelectPin, HIGH);
-	
-	// If a valid pin number has been set, pull device out of power down / reset state.
-	if (_resetPowerDownPin != UNUSED_PIN) {
-		// First set the resetPowerDownPin as digital input, to check the MFRC522 power down mode.
-		pinMode(_resetPowerDownPin, INPUT);
-	
-		if (digitalRead(_resetPowerDownPin) == LOW) {	// The MFRC522 chip is in power down mode.
-			pinMode(_resetPowerDownPin, OUTPUT);		// Now set the resetPowerDownPin as digital output.
-			digitalWrite(_resetPowerDownPin, LOW);		// Make sure we have a clean LOW state.
-			delayMicroseconds(2);				// 8.8.1 Reset timing requirements says about 100ns. Let us be generous: 2μsl
-			digitalWrite(_resetPowerDownPin, HIGH);		// Exit power down mode. This triggers a hard reset.
-			// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
-			delay(50);
-			hardReset = 1;
-		}
-	}
+
+    gpio_config_t RST_PIN_out;
+    RST_PIN_out.intr_type = GPIO_INTR_DISABLE;
+    RST_PIN_out.mode = GPIO_MODE_OUTPUT;
+    RST_PIN_out.pin_bit_mask =  (1ULL<<RST_PIN);
+    RST_PIN_out.pull_down_en = 0;
+    RST_PIN_out.pull_up_en = 0;
+
+     gpio_config_t RST_PIN_in;
+    RST_PIN_in.intr_type = GPIO_INTR_DISABLE;
+    RST_PIN_in.mode = GPIO_MODE_INPUT;
+    RST_PIN_in.pin_bit_mask =  (1ULL<<RST_PIN);
+    RST_PIN_in.pull_down_en = 0;
+    RST_PIN_in.pull_up_en = 0;
+    gpio_config(&RST_PIN_out);
+    gpio_set_level(HSPI_CS, 1);
+
+    gpio_config(&RST_PIN_in);
+    if(gpio_get_level(RST_PIN) == 0){
+        gpio_config(&RST_PIN_out);
+        gpio_set_level(RST_PIN, 0);
+        vTaskDelay(2 /portTICK_PERIOD_MS);
+        gpio_set_level(RST_PIN, 1);
+        vTaskDelay(50 /portTICK_PERIOD_MS);
+        hardReset = 1;
+    }
 
 	if (!hardReset) { // Perform a soft reset if we haven't triggered a hard reset above.
 		PCD_Reset();
@@ -230,25 +353,7 @@ void PCD_Init1() {
 	PCD_AntennaOn();						// Enable the antenna driver pins TX1 and TX2 (they were disabled by the reset)
 } // End PCD_Init()
 
-/**
- * Initializes the MFRC522 chip.
- */
-void PCD_Init2(	uint8_t resetPowerDownPin	///< Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
-					) {
-	PCD_Init(SS, resetPowerDownPin); // SS is defined in pins_arduino.h
-} // End PCD_Init()
 
-/**
- * Initializes the MFRC522 chip.
- */
-void PCD_Init3(	uint8_t chipSelectPin,		///< Arduino pin connected to MFRC522's SPI slave select input (Pin 24, NSS, active low)
-						uint8_t resetPowerDownPin	///< Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
-					) {
-	_chipSelectPin = chipSelectPin;
-	_resetPowerDownPin = resetPowerDownPin; 
-	// Set the chipSelectPin as digital output, do not select the slave yet
-	PCD_Init1();
-} // End PCD_Init()
 
 /**
  * Performs a soft reset on the MFRC522 chip and waits for it to be ready again.
@@ -261,7 +366,7 @@ void PCD_Reset() {
 	uint8_t count = 0;
 	do {
 		// Wait for the PowerDown bit in CommandReg to be cleared (max 3x50ms)
-		delay(50);
+        vTaskDelay(50 /portTICK_PERIOD_MS);
 	} while ((PCD_ReadRegister(CommandReg) & (1 << 4)) && (++count) < 3);
 } // End PCD_Reset()
 
@@ -415,14 +520,14 @@ void PCD_SoftPowerUp(){
 	val &= ~(1<<4);// set PowerDown bit ( bit 4 ) to 0 
 	PCD_WriteRegister(CommandReg, val);//write new value to the command register
 	// wait until PowerDown bit is cleared (this indicates end of wake up procedure) 
-	const uint32_t timeout = (uint32_t)millis() + 500;// create timer for timeout (just in case) 
+	const uint64_t timeout = (uint64_t)millis() + 500;// create timer for timeout (just in case) 
 	
 	while(millis()<=timeout){ // set timeout to 500 ms 
 		val = PCD_ReadRegister(CommandReg);// Read state of the command register
 		if(!(val & (1<<4))){ // if powerdown bit is 0 
 			break;// wake up procedure is finished 
 		}
-		yield();
+		taskYIELD();
 	}
 }
 
@@ -486,7 +591,7 @@ enum StatusCode PCD_CommunicateWithPICC(	uint8_t command,		///< The command to e
 	// When they are set in the ComIrqReg register, then the command is
 	// considered complete. If the command is not indicated as complete in
 	// ~36ms, then consider the command as timed out.
-	const uint32_t deadline = millis() + 36;
+	const uint64_t deadline = millis() + 36;
 	uint8_t completed = 0;
 
 	do {
@@ -498,7 +603,7 @@ enum StatusCode PCD_CommunicateWithPICC(	uint8_t command,		///< The command to e
 		if (n & 0x01) {						// Timer interrupt - nothing received in 25ms
 			return STATUS_TIMEOUT;
 		}
-		yield();
+		taskYIELD();
 	}
 	while (millis() < deadline);
 
@@ -1903,9 +2008,12 @@ uint8_t PICC_IsNewCardPresent() {
 
 	// Reset baud rates
 	PCD_WriteRegister(TxModeReg, 0x00);
+    printf("%d\n",TxModeReg);
 	PCD_WriteRegister(RxModeReg, 0x00);
+    printf("%d\n",RxModeReg);
 	// Reset ModWidthReg
 	PCD_WriteRegister(ModWidthReg, 0x26);
+    printf("%d %d\n",ModWidthReg, 0x26);
 
 	enum StatusCode result = PICC_RequestA(bufferATQA, &bufferSize);
 	return (result == STATUS_OK || result == STATUS_COLLISION);

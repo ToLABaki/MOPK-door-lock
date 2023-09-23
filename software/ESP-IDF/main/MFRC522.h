@@ -1,21 +1,30 @@
-/**
- * Library to use Arduino MFRC522 module.
- * 
- * @authors Dr.Leong, Miguel Balboa, Søren Thing Andersen, Tom Clement, many more! See GitLog.
- * 
- * For more information read the README.
- * 
- * Please read this file for an overview and then MFRC522.cpp for comments on the specific functions.
- */
 #ifndef MFRC522_H
 #define MFRC522_H
 
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_freertos_hooks.h"
+#include "freertos/semphr.h"
+#include "freertos/timers.h"
+#include "esp_system.h"
+#include "driver/gpio.h"
+#include "esp_err.h"
+#include "esp_log.h"
+#include "driver/spi_master.h"
+#include "esp_timer.h"
+
+
+#define HSPI_CS GPIO_NUM_15
+#define RST_PIN GPIO_NUM_4
+#define HSPI_MOSI GPIO_NUM_13
+#define HSPI_MISO GPIO_NUM_12
+#define HSPI_CLK  GPIO_NUM_14
 
 // Firmware data for self-test
 // Reference values based on firmware version
@@ -23,129 +32,90 @@
 //
 // Version 0.0 (0x90)
 // Philips Semiconductors; Preliminary Specification Revision 2.0 - 01 August 2005; 16.1 self-test
-const uint8_t MFRC522_firmware_referenceV0_0[]  = {
-	0x00, 0x87, 0x98, 0x0f, 0x49, 0xFF, 0x07, 0x19,
-	0xBF, 0x22, 0x30, 0x49, 0x59, 0x63, 0xAD, 0xCA,
-	0x7F, 0xE3, 0x4E, 0x03, 0x5C, 0x4E, 0x49, 0x50,
-	0x47, 0x9A, 0x37, 0x61, 0xE7, 0xE2, 0xC6, 0x2E,
-	0x75, 0x5A, 0xED, 0x04, 0x3D, 0x02, 0x4B, 0x78,
-	0x32, 0xFF, 0x58, 0x3B, 0x7C, 0xE9, 0x00, 0x94,
-	0xB4, 0x4A, 0x59, 0x5B, 0xFD, 0xC9, 0x29, 0xDF,
-	0x35, 0x96, 0x98, 0x9E, 0x4F, 0x30, 0x32, 0x8D
-};
+extern const uint8_t MFRC522_firmware_referenceV0_0[];
 // Version 1.0 (0x91)
 // NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test
-const uint8_t MFRC522_firmware_referenceV1_0[] = {
-	0x00, 0xC6, 0x37, 0xD5, 0x32, 0xB7, 0x57, 0x5C,
-	0xC2, 0xD8, 0x7C, 0x4D, 0xD9, 0x70, 0xC7, 0x73,
-	0x10, 0xE6, 0xD2, 0xAA, 0x5E, 0xA1, 0x3E, 0x5A,
-	0x14, 0xAF, 0x30, 0x61, 0xC9, 0x70, 0xDB, 0x2E,
-	0x64, 0x22, 0x72, 0xB5, 0xBD, 0x65, 0xF4, 0xEC,
-	0x22, 0xBC, 0xD3, 0x72, 0x35, 0xCD, 0xAA, 0x41,
-	0x1F, 0xA7, 0xF3, 0x53, 0x14, 0xDE, 0x7E, 0x02,
-	0xD9, 0x0F, 0xB5, 0x5E, 0x25, 0x1D, 0x29, 0x79
-};
+extern const uint8_t MFRC522_firmware_referenceV1_0[];
 // Version 2.0 (0x92)
 // NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test
-const uint8_t MFRC522_firmware_referenceV2_0[] = {
-	0x00, 0xEB, 0x66, 0xBA, 0x57, 0xBF, 0x23, 0x95,
-	0xD0, 0xE3, 0x0D, 0x3D, 0x27, 0x89, 0x5C, 0xDE,
-	0x9D, 0x3B, 0xA7, 0x00, 0x21, 0x5B, 0x89, 0x82,
-	0x51, 0x3A, 0xEB, 0x02, 0x0C, 0xA5, 0x00, 0x49,
-	0x7C, 0x84, 0x4D, 0xB3, 0xCC, 0xD2, 0x1B, 0x81,
-	0x5D, 0x48, 0x76, 0xD5, 0x71, 0x61, 0x21, 0xA9,
-	0x86, 0x96, 0x83, 0x38, 0xCF, 0x9D, 0x5B, 0x6D,
-	0xDC, 0x15, 0xBA, 0x3E, 0x7D, 0x95, 0x3B, 0x2F
-};
+extern const uint8_t MFRC522_firmware_referenceV2_0[];
 // Clone
 // Fudan Semiconductor FM17522 (0x88)
-const uint8_t FM17522_firmware_reference[] = {
-	0x00, 0xD6, 0x78, 0x8C, 0xE2, 0xAA, 0x0C, 0x18,
-	0x2A, 0xB8, 0x7A, 0x7F, 0xD3, 0x6A, 0xCF, 0x0B,
-	0xB1, 0x37, 0x63, 0x4B, 0x69, 0xAE, 0x91, 0xC7,
-	0xC3, 0x97, 0xAE, 0x77, 0xF4, 0x37, 0xD7, 0x9B,
-	0x7C, 0xF5, 0x3C, 0x11, 0x8F, 0x15, 0xC3, 0xD7,
-	0xC1, 0x5B, 0x00, 0x2A, 0xD0, 0x75, 0xDE, 0x9E,
-	0x51, 0x64, 0xAB, 0x3E, 0xE9, 0x15, 0xB5, 0xAB,
-	0x56, 0x9A, 0x98, 0x82, 0x26, 0xEA, 0x2A, 0x62
-};
+extern const uint8_t FM17522_firmware_reference[];
 
 
-	// Size of the MFRC522 FIFO
-	static  uint8_t FIFO_SIZE = 64;		// The FIFO is 64 uint8_ts.
-	// Default value for unused pin
-	static  uint8_t UNUSED_PIN = UINT8_MAX;
+
 
 	// MFRC522 registers. Described in chapter 9 of the datasheet.
 	// When using SPI all addresses are shifted one bit left in the "SPI address uint8_t" (section 8.1.2.3)
 	enum PCD_Register{
 		// Page 0: Command and status
 		//						  0x00			// reserved for future use
-		CommandReg				= 0x01 << 1,	// starts and stops command execution
-		ComIEnReg				= 0x02 << 1,	// enable and disable interrupt request control bits
-		DivIEnReg				= 0x03 << 1,	// enable and disable interrupt request control bits
-		ComIrqReg				= 0x04 << 1,	// interrupt request bits
-		DivIrqReg				= 0x05 << 1,	// interrupt request bits
-		ErrorReg				= 0x06 << 1,	// error bits showing the error status of the last command executed 
-		Status1Reg				= 0x07 << 1,	// communication status bits
-		Status2Reg				= 0x08 << 1,	// receiver and transmitter status bits
-		FIFODataReg				= 0x09 << 1,	// input and output of 64 uint8_t FIFO buffer
-		FIFOLevelReg			= 0x0A << 1,	// number of uint8_ts stored in the FIFO buffer
-		WaterLevelReg			= 0x0B << 1,	// level for FIFO underflow and overflow warning
-		ControlReg				= 0x0C << 1,	// miscellaneous control registers
-		BitFramingReg			= 0x0D << 1,	// adjustments for bit-oriented frames
-		CollReg					= 0x0E << 1,	// bit position of the first bit-collision detected on the RF interface
+		CommandReg				= 0x01,	// starts and stops command execution
+		ComIEnReg				= 0x02,	// enable and disable interrupt request control bits
+		DivIEnReg				= 0x03,	// enable and disable interrupt request control bits
+		ComIrqReg				= 0x04,	// interrupt request bits
+		DivIrqReg				= 0x05,	// interrupt request bits
+		ErrorReg				= 0x06,	// error bits showing the error status of the last command executed 
+		Status1Reg				= 0x07,	// communication status bits
+		Status2Reg				= 0x08,	// receiver and transmitter status bits
+		FIFODataReg				= 0x09,	// input and output of 64 uint8_t FIFO buffer
+		FIFOLevelReg			= 0x0A,	// number of uint8_ts stored in the FIFO buffer
+		WaterLevelReg			= 0x0B,	// level for FIFO underflow and overflow warning
+		ControlReg				= 0x0C,	// miscellaneous control registers
+		BitFramingReg			= 0x0D,	// adjustments for bit-oriented frames
+		CollReg					= 0x0E,	// bit position of the first bit-collision detected on the RF interface
 		//						  0x0F			// reserved for future use
 		
 		// Page 1: Command
 		// 						  0x10			// reserved for future use
-		ModeReg					= 0x11 << 1,	// defines general modes for transmitting and receiving 
-		TxModeReg				= 0x12 << 1,	// defines transmission data rate and framing
-		RxModeReg				= 0x13 << 1,	// defines reception data rate and framing
-		TxControlReg			= 0x14 << 1,	// controls the logical behavior of the antenna driver pins TX1 and TX2
-		TxASKReg				= 0x15 << 1,	// controls the setting of the transmission modulation
-		TxSelReg				= 0x16 << 1,	// selects the internal sources for the antenna driver
-		RxSelReg				= 0x17 << 1,	// selects internal receiver settings
-		RxThresholdReg			= 0x18 << 1,	// selects thresholds for the bit decoder
-		DemodReg				= 0x19 << 1,	// defines demodulator settings
+		ModeReg					= 0x11,	// defines general modes for transmitting and receiving 
+		TxModeReg				= 0x12,	// defines transmission data rate and framing
+		RxModeReg				= 0x13,	// defines reception data rate and framing
+		TxControlReg			= 0x14,	// controls the logical behavior of the antenna driver pins TX1 and TX2
+		TxASKReg				= 0x15,	// controls the setting of the transmission modulation
+		TxSelReg				= 0x16,	// selects the internal sources for the antenna driver
+		RxSelReg				= 0x17,	// selects internal receiver settings
+		RxThresholdReg			= 0x18,	// selects thresholds for the bit decoder
+		DemodReg				= 0x19,	// defines demodulator settings
 		// 						  0x1A			// reserved for future use
 		// 						  0x1B			// reserved for future use
-		MfTxReg					= 0x1C << 1,	// controls some MIFARE communication transmit parameters
-		MfRxReg					= 0x1D << 1,	// controls some MIFARE communication receive parameters
+		MfTxReg					= 0x1C,	// controls some MIFARE communication transmit parameters
+		MfRxReg					= 0x1D,	// controls some MIFARE communication receive parameters
 		// 						  0x1E			// reserved for future use
-		SerialSpeedReg			= 0x1F << 1,	// selects the speed of the serial UART interface
+		SerialSpeedReg			= 0x1F,	// selects the speed of the serial UART interface
 		
 		// Page 2: Configuration
 		// 						  0x20			// reserved for future use
-		CRCResultRegH			= 0x21 << 1,	// shows the MSB and LSB values of the CRC calculation
-		CRCResultRegL			= 0x22 << 1,
+		CRCResultRegH			= 0x21,	// shows the MSB and LSB values of the CRC calculation
+		CRCResultRegL			= 0x22,
 		// 						  0x23			// reserved for future use
-		ModWidthReg				= 0x24 << 1,	// controls the ModWidth setting?
+		ModWidthReg				= 0x24,	// controls the ModWidth setting?
 		// 						  0x25			// reserved for future use
-		RFCfgReg				= 0x26 << 1,	// configures the receiver gain
-		GsNReg					= 0x27 << 1,	// selects the conductance of the antenna driver pins TX1 and TX2 for modulation 
-		CWGsPReg				= 0x28 << 1,	// defines the conductance of the p-driver output during periods of no modulation
-		ModGsPReg				= 0x29 << 1,	// defines the conductance of the p-driver output during periods of modulation
-		TModeReg				= 0x2A << 1,	// defines settings for the internal timer
-		TPrescalerReg			= 0x2B << 1,	// the lower 8 bits of the TPrescaler value. The 4 high bits are in TModeReg.
-		TReloadRegH				= 0x2C << 1,	// defines the 16-bit timer reload value
-		TReloadRegL				= 0x2D << 1,
-		TCounterValueRegH		= 0x2E << 1,	// shows the 16-bit timer value
-		TCounterValueRegL		= 0x2F << 1,
+		RFCfgReg				= 0x26,	// configures the receiver gain
+		GsNReg					= 0x27,	// selects the conductance of the antenna driver pins TX1 and TX2 for modulation 
+		CWGsPReg				= 0x28,	// defines the conductance of the p-driver output during periods of no modulation
+		ModGsPReg				= 0x29,	// defines the conductance of the p-driver output during periods of modulation
+		TModeReg				= 0x2A,	// defines settings for the internal timer
+		TPrescalerReg			= 0x2B,	// the lower 8 bits of the TPrescaler value. The 4 high bits are in TModeReg.
+		TReloadRegH				= 0x2C,	// defines the 16-bit timer reload value
+		TReloadRegL				= 0x2D,
+		TCounterValueRegH		= 0x2E,	// shows the 16-bit timer value
+		TCounterValueRegL		= 0x2F,
 		
 		// Page 3: Test Registers
 		// 						  0x30			// reserved for future use
-		TestSel1Reg				= 0x31 << 1,	// general test signal configuration
-		TestSel2Reg				= 0x32 << 1,	// general test signal configuration
-		TestPinEnReg			= 0x33 << 1,	// enables pin output driver on pins D1 to D7
-		TestPinValueReg			= 0x34 << 1,	// defines the values for D1 to D7 when it is used as an I/O bus
-		TestBusReg				= 0x35 << 1,	// shows the status of the internal test bus
-		AutoTestReg				= 0x36 << 1,	// controls the digital self-test
-		VersionReg				= 0x37 << 1,	// shows the software version
-		AnalogTestReg			= 0x38 << 1,	// controls the pins AUX1 and AUX2
-		TestDAC1Reg				= 0x39 << 1,	// defines the test value for TestDAC1
-		TestDAC2Reg				= 0x3A << 1,	// defines the test value for TestDAC2
-		TestADCReg				= 0x3B << 1		// shows the value of ADC I and Q channels
+		TestSel1Reg				= 0x31,	// general test signal configuration
+		TestSel2Reg				= 0x32,	// general test signal configuration
+		TestPinEnReg			= 0x33,	// enables pin output driver on pins D1 to D7
+		TestPinValueReg			= 0x34,	// defines the values for D1 to D7 when it is used as an I/O bus
+		TestBusReg				= 0x35,	// shows the status of the internal test bus
+		AutoTestReg				= 0x36,	// controls the digital self-test
+		VersionReg				= 0x37,	// shows the software version
+		AnalogTestReg			= 0x38,	// controls the pins AUX1 and AUX2
+		TestDAC1Reg				= 0x39,	// defines the test value for TestDAC1
+		TestDAC2Reg				= 0x3A,	// defines the test value for TestDAC2
+		TestADCReg				= 0x3B		// shows the value of ADC I and Q channels
 		// 						  0x3C			// reserved for production tests
 		// 						  0x3D			// reserved for production tests
 		// 						  0x3E			// reserved for production tests
@@ -258,13 +228,13 @@ const uint8_t FM17522_firmware_reference[] = {
 	} MIFARE_Key;
 	
 	// Member variables
-	Uid uid;								// Used by PICC_ReadCardSerial().
+	extern Uid uid;								// Used by PICC_ReadCardSerial().
 	
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Functions for setting up the Arduino
 	/////////////////////////////////////////////////////////////////////////////////////
 	
-	void INIT_MFRC522(uint8_t chipSelectPin, uint8_t resetPowerDownPin);
+	void INIT_MFRC522();
 	
 	/////////////////////////////////////////////////////////////////////////////////////
 	// Basic interface functions for communicating with the MFRC522
@@ -281,8 +251,6 @@ const uint8_t FM17522_firmware_reference[] = {
 	// Functions for manipulating the MFRC522
 	/////////////////////////////////////////////////////////////////////////////////////
 	void PCD_Init1();
-	void PCD_Init2(uint8_t resetPowerDownPin);
-	void PCD_Init3(uint8_t chipSelectPin, uint8_t resetPowerDownPin);
 	void PCD_Reset();
 	void PCD_AntennaOn();
 	void PCD_AntennaOff();
@@ -356,8 +324,7 @@ const uint8_t FM17522_firmware_reference[] = {
 	uint8_t PICC_ReadCardSerial();
 	
 
-	uint8_t _chipSelectPin;		// Arduino pin connected to MFRC522's SPI slave select input (Pin 24, NSS, active low)
-	uint8_t _resetPowerDownPin;	// Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
+	
 	enum StatusCode MIFARE_TwoStepHelper(uint8_t command, uint8_t blockAddr, int32_t data);
 
 #endif
