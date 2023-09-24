@@ -1,5 +1,6 @@
 (sym_lib_table
   (version 7)
-  (lib (name "ESP32-DEVKIT-V1")(type "KiCad")(uri "${KIPRJMOD}/esp32-devkit-v1/ESP32-DEVKIT-V1.kicad_sym")(options "")(descr ""))
-  (lib (name ".kicad_sym")(type "Legacy")(uri "${KIPRJMOD}/easyeda2kicad/.kicad_sym")(options "")(descr ""))
+  (lib (name "ESP32-DEVKIT-V1")(type "KiCad")(uri "${KIPRJMOD}/libs/esp32-devkit-v1/ESP32-DEVKIT-V1.kicad_sym")(options "")(descr ""))
+  (lib (name "C393941")(type "KiCad")(uri "${KIPRJMOD}/libs/C393941/C393941.kicad_sym")(options "")(descr ""))
+  (lib (name "C70381")(type "KiCad")(uri "${KIPRJMOD}/libs/C70381/C70381.kicad_sym")(options "")(descr ""))
 )

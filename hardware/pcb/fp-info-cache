@@ -1,11 +1,4 @@
-21626780044299382
-.pretty
-SOT-23-6_L2.9-W1.7-P0.95-LS2.8-BL
-
-
-0
-6
-6
+21630171669809868
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -2428,6 +2421,20 @@ speaker CUI
 0
 2
 2
+C70381
+BAT-SMD_CR1220-2
+
+
+0
+4
+2
+C393941
+TF-SMD_TF-PUSH
+
+
+0
+15
+13
 Calibration_Scale
 Gauge_10mm_Type1_CopperTop
 Gauge, Massstab, 10mm, CopperTop, Type 1,
@@ -83096,6 +83103,13 @@ Integrated Circuit
 0
 25
 25
+SamacSys_Parts
+S8411-45R_1
+S8411-45R_1
+Connector
+0
+2
+2
 SamacSys_Parts
 SOP254P650X170-4N
 TO-269AA
