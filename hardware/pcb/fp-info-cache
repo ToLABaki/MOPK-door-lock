@@ -1,4 +1,4 @@
-21630171669809868
+21635278212464545
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -2421,6 +2421,20 @@ speaker CUI
 0
 2
 2
+C3131
+FUSE-TH_L22.6-W9.0
+
+
+0
+2
+2
+C58066
+FUSE-TH_L24.5-W9.8-P22.5
+
+
+0
+2
+2
 C70381
 BAT-SMD_CR1220-2
 
@@ -2435,6 +2449,13 @@ TF-SMD_TF-PUSH
 0
 15
 13
+C5189755
+IND-SMD_L7.2-W6.6_GPSR07X0
+
+
+0
+2
+2
 Calibration_Scale
 Gauge_10mm_Type1_CopperTop
 Gauge, Massstab, 10mm, CopperTop, Type 1,
