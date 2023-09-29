@@ -3,4 +3,5 @@
   (lib (name "ESP32-DEVKIT-V1")(type "KiCad")(uri "${KIPRJMOD}/libs/esp32-devkit-v1/ESP32-DEVKIT-V1.kicad_sym")(options "")(descr ""))
   (lib (name "C393941")(type "KiCad")(uri "${KIPRJMOD}/libs/C393941/C393941.kicad_sym")(options "")(descr ""))
   (lib (name "C70381")(type "KiCad")(uri "${KIPRJMOD}/libs/C70381/C70381.kicad_sym")(options "")(descr ""))
+  (lib (name "C781867")(type "KiCad")(uri "${KIPRJMOD}/libs/C781867/C781867.kicad_sym")(options "")(descr ""))
 )
