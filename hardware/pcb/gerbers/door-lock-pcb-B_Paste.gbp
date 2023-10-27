@@ -1,0 +1,56 @@
+G04 #@! TF.GenerationSoftware,KiCad,Pcbnew,7.0.8*
+G04 #@! TF.CreationDate,2023-10-27T20:47:02+03:00*
+G04 #@! TF.ProjectId,door-lock-pcb,646f6f72-2d6c-46f6-936b-2d7063622e6b,rev?*
+G04 #@! TF.SameCoordinates,Original*
+G04 #@! TF.FileFunction,Paste,Bot*
+G04 #@! TF.FilePolarity,Positive*
+%FSLAX46Y46*%
+G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
+G04 Created by KiCad (PCBNEW 7.0.8) date 2023-10-27 20:47:02*
+%MOMM*%
+%LPD*%
+G01*
+G04 APERTURE LIST*
+G04 Aperture macros list*
+%AMRoundRect*
+0 Rectangle with rounded corners*
+0 $1 Rounding radius*
+0 $2 $3 $4 $5 $6 $7 $8 $9 X,Y pos of 4 corners*
+0 Add a 4 corners polygon primitive as box body*
+4,1,4,$2,$3,$4,$5,$6,$7,$8,$9,$2,$3,0*
+0 Add four circle primitives for the rounded corners*
+1,1,$1+$1,$2,$3*
+1,1,$1+$1,$4,$5*
+1,1,$1+$1,$6,$7*
+1,1,$1+$1,$8,$9*
+0 Add four rect primitives between the rounded corners*
+20,1,$1+$1,$2,$3,$4,$5,0*
+20,1,$1+$1,$4,$5,$6,$7,0*
+20,1,$1+$1,$6,$7,$8,$9,0*
+20,1,$1+$1,$8,$9,$2,$3,0*%
+G04 Aperture macros list end*
+%ADD10C,1.800000*%
+%ADD11RoundRect,0.250000X0.350000X0.450000X-0.350000X0.450000X-0.350000X-0.450000X0.350000X-0.450000X0*%
+%ADD12RoundRect,0.250000X-0.350000X-0.450000X0.350000X-0.450000X0.350000X0.450000X-0.350000X0.450000X0*%
+%ADD13RoundRect,0.250000X-0.070711X0.565685X-0.565685X0.070711X0.070711X-0.565685X0.565685X-0.070711X0*%
+G04 APERTURE END LIST*
+D10*
+X193929000Y-122672000D03*
+X193929000Y-115072000D03*
+D11*
+X176514000Y-80899000D03*
+X174514000Y-80899000D03*
+D12*
+X192310000Y-103759000D03*
+X194310000Y-103759000D03*
+X192310000Y-107823000D03*
+X194310000Y-107823000D03*
+D13*
+X174443107Y-77397893D03*
+X173028893Y-78812107D03*
+D12*
+X192310000Y-105791000D03*
+X194310000Y-105791000D03*
+X192310000Y-101727000D03*
+X194310000Y-101727000D03*
+M02*
