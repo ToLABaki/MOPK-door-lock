@@ -70,3 +70,5 @@ platformio.ini
 /software/ESP-IDF/build/
 .vscode/
 
+/hardware/pcb/door-lock-pcb-backups/*
+
