@@ -4871,7 +4871,7 @@
   )
 
   (symbol (lib_id "Device:C_Polarized_Small") (at 59.69 186.69 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom yes) (on_board yes) (dnp yes)
     (uuid d08d8336-17cf-4d57-adfa-981a3b7ee8d6)
     (property "Reference" "C5" (at 61.595 185.42 0)
       (effects (font (size 1.27 1.27)) (justify left))
