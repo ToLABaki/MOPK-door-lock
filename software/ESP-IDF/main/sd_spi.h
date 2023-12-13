@@ -22,7 +22,7 @@
 
 
 
-#define SD_CS GPIO_NUM_5
+#define SD_CS GPIO_NUM_15
 
 esp_err_t sd_init();
 

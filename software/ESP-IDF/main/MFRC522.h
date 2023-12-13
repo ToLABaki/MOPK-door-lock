@@ -34,8 +34,8 @@
 #include "esp_timer.h"
 
 
-#define VSPI_CS GPIO_NUM_16
-#define RST_PIN GPIO_NUM_26
+#define VSPI_CS GPIO_NUM_5
+#define RST_PIN GPIO_NUM_25
 #define VSPI_MOSI GPIO_NUM_23
 #define VSPI_MISO GPIO_NUM_19
 #define VSPI_CLK  GPIO_NUM_18
