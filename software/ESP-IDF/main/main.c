@@ -28,6 +28,10 @@ static void mainTask(void *pvParameter);
 #define RELAY_PIN       GPIO_NUM_27
 #define BUZZER_PIN       GPIO_NUM_32
 
+#define LED_R           GPIO_NUM_26
+#define LED_G           GPIO_NUM_4
+#define LED_B           GPIO_NUM_2
+
 #define RTC_ADDR        0x68
 
 static const char *TAG = "i2c-example";
@@ -36,7 +40,7 @@ static const char *TAG = "i2c-example";
 gpio_config_t io_conf_out = {
     .intr_type = GPIO_INTR_DISABLE,
     .mode = GPIO_MODE_OUTPUT,
-    .pin_bit_mask = (1ULL<<RELAY_PIN) | (1ULL<<BUZZER_PIN),
+    .pin_bit_mask = (1ULL<<RELAY_PIN) | (1ULL<<BUZZER_PIN) | (1ULL<<LED_R) | (1ULL<<LED_G) | (1ULL<<LED_B),
     .pull_down_en = 0,
     .pull_up_en = 0
 
@@ -116,14 +120,29 @@ void app_main(void){
     gpio_config(&io_conf_out);
     gpio_set_level(RELAY_PIN, 0);
 
+
+
+    gpio_set_level(LED_R, 1);
+    gpio_set_level(LED_G, 0);
+    gpio_set_level(LED_B, 0);
+    vTaskDelay(500/portTICK_PERIOD_MS);
+    gpio_set_level(LED_R, 0);
+    gpio_set_level(LED_G, 1);
+    gpio_set_level(LED_B, 0);
+    vTaskDelay(500/portTICK_PERIOD_MS);
+    gpio_set_level(LED_R, 0);
+    gpio_set_level(LED_G, 0);
+    gpio_set_level(LED_B, 1);
+    vTaskDelay(500/portTICK_PERIOD_MS);
+    gpio_set_level(LED_R, 0);
+    gpio_set_level(LED_G, 0);
+    gpio_set_level(LED_B, 0);
+
     mfrc = MFRC522_Init();
     PCD_Init(mfrc);
 
 
-    i2c_param_config(I2C_NUM_0, &conf);
-    if(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0) != ESP_OK){
-        printf("I2c error!\n");
-    }
+  
 
     
 
@@ -137,19 +156,14 @@ void app_main(void){
 
 void mainTask(void *pvParameter){
     uint32_t i = 0, status = 0;
-    i2c_cmd_handle_t cmd;
     uint8_t tmp;
     while(1){
         
         if(PICC_IsNewCardPresent(mfrc) == 1){
 
-            //printf("READING\n");
+            printf("READING\n");
             vTaskDelay(50/portTICK_PERIOD_MS);
-            //printf("PICC_ReadCardSerial START\n");
-            
-            
-            //printf("PICC_ReadCardSerial END\n");
-            //printf("%d  %x-%x-%x-%x  %x\n",PICC_ReadCardSerial(mfrc) , mfrc->uid.uidByte[0], mfrc->uid.uidByte[1], mfrc->uid.uidByte[2], mfrc->uid.uidByte[3], mfrc->uid.sak );
+            printf("%d  %x-%x-%x-%x  %x\n",PICC_ReadCardSerial(mfrc) , mfrc->uid.uidByte[0], mfrc->uid.uidByte[1], mfrc->uid.uidByte[2], mfrc->uid.uidByte[3], mfrc->uid.sak );
             status = 1;
             i = 0;
         }else{
@@ -162,42 +176,23 @@ void mainTask(void *pvParameter){
         }
 
         if(status == 1){
+            //tag detected
             gpio_set_level(RELAY_PIN, 1);
-            //gpio_set_level(BUZZER_PIN, 1);
+            //ESP_LOG_BUFFER_HEX(TAG, rx_data, 8);
+            gpio_set_level(LED_G, 1);
+            gpio_set_level(LED_R, 0);
+            gpio_set_level(BUZZER_PIN, 1);
+
+            vTaskDelay(700/portTICK_PERIOD_MS);
         }else{
-            //gpio_set_level(BUZZER_PIN, 0);
+            //nothing detected
+            gpio_set_level(BUZZER_PIN, 0);
+            gpio_set_level(LED_G, 0);
+            gpio_set_level(LED_R, 1);
             gpio_set_level(RELAY_PIN, 0);
+            
         }
-
-        tmp = 0x00;
-
-        //cmd = i2c_cmd_link_create();
-        //i2c_master_start(cmd);
-        //i2c_master_write_byte(cmd, (RTC_ADDR << 1)| I2C_MASTER_WRITE ,1);
-        //i2c_master_write(cmd, &tmp, 1, 1);
-        //i2c_master_stop(cmd);
-        ///i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000/portTICK_PERIOD_MS);
-
-        
-        //i2c_master_start(cmd);
-
-        //i2c_master_read(cmd, rx_data, 5, 1);
-        //i2c_master_stop(cmd);
-        //i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000/portTICK_PERIOD_MS);
-        //i2c_cmd_link_delete(cmd);
-
-        //i2c_master_write_to_device(I2C_NUM_0, RTC_ADDR, tmp, 1, 1000/portTICK_PERIOD_MS);   
-        i2c_master_read_from_device(I2C_NUM_0, RTC_ADDR, rx_data, 8, 1000/portTICK_PERIOD_MS);
-        
-        ESP_LOG_BUFFER_HEX(TAG, rx_data, 8);
-        
-
-        
-
-        
-        
-        vTaskDelay(300/portTICK_PERIOD_MS);
-        
+        vTaskDelay(20/portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
 }
